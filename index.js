@@ -35,7 +35,14 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
 
-    
+    // collections 
+    const catColl = client.db('readifyDB').collection('categories')
+
+    // categories api
+    app.get('/categories', async(req, res) => {
+        const result = await catColl.find().toArray()
+        res.send(result)
+    })
 
 
 
