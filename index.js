@@ -38,6 +38,7 @@ async function run() {
         // collections 
         const catColl = client.db('readifyDB').collection('categories')
         const booksColl = client.db('readifyDB').collection('books')
+        const borrowedColl = client.db('readifyDB').collection('borrowed')
 
         // categories api
         app.get('/categories', async (req, res) => {
@@ -75,10 +76,28 @@ async function run() {
         // book post api 
         app.post('/books', async (req, res) => {
             const newBook = req.body
-            console.log(newBook)
+            // console.log(newBook)
             const result = await booksColl.insertOne(newBook)
             res.send(result)
         })
+
+
+        // Borrowed book post api 
+        app.post('/borrowed-books', async (req, res) => {
+            const borrowedBook = req.body
+            const refidNum = borrowedBook.refid
+            // console.log(typeof refidNum)
+            const result = await borrowedColl.insertOne(borrowedBook)
+
+
+            const query = { _id: new ObjectId(refidNum) }
+            // console.log(query)
+            const result2 = await booksColl.updateOne(query, { $inc: { quantity: -1 } });
+            // console.log(result2);
+            res.send(result)
+        })
+
+
 
 
 
@@ -117,6 +136,38 @@ async function run() {
             // console.log(result);
             res.send(result)
         })
+
+
+        // my borrowed books 
+        app.get('/my-borrowed-books/:email', async (req, res) => {
+            // console.log(req.params.email);
+            const result = await borrowedColl.find({ borrowerEmail: req.params.email }).toArray()
+            res.send(result)
+        })
+
+
+
+        // delete api 
+        app.delete('/delete/:id', async (req, res) => {
+
+            const id = req.params.id
+            console.log(id);
+            
+            const result = await borrowedColl.deleteOne({ refid: req.params.id })
+            res.send(result)
+            
+            const query = { _id: new ObjectId(id) }
+            // const query = { _id: new ObjectId(refidNum) }
+            // console.log(query)
+            const result2 = await booksColl.updateOne(query, { $inc: { quantity: +1 } });
+            // console.log(result2);
+
+        })
+
+
+
+
+
 
 
         // Connect the client to the server	(optional starting in v4.7)
