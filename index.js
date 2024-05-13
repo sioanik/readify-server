@@ -2,6 +2,9 @@ const express = require('express')
 const cors = require('cors');
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser')
+
 
 const app = express()
 const port = process.env.PORT || 5000
@@ -16,6 +19,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(cookieParser())
 
 
 
@@ -34,11 +38,26 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
+        
 
         // collections 
         const catColl = client.db('readifyDB').collection('categories')
         const booksColl = client.db('readifyDB').collection('books')
         const borrowedColl = client.db('readifyDB').collection('borrowed')
+
+
+        // jwt related 
+        app.post('/jwt', async(req, res) =>{
+            const user = req.body
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'})
+            console.log(user);
+            res.send(token)
+        })
+
+
+
+
+
 
         // categories api
         app.get('/categories', async (req, res) => {
