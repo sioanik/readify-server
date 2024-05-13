@@ -23,6 +23,9 @@ app.use(cookieParser())
 
 
 
+
+
+
 // mongodb
 
 const uri = `mongodb+srv://${process.env.READIFY_USER}:${process.env.READIFY_KEY}@cluster0.cczhmev.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -36,9 +39,31 @@ const client = new MongoClient(uri, {
     }
 });
 
+// middlewares 
+const logger = (req, res, next) => {
+    
+    next()
+}
+
+const verifyToken = (req, res, next) => {
+    const token = req.cookies?.token
+    // console.log('token in the middleware', token);
+    if (!token) {
+        return res.status(401).send({ message: 'unauthorized access' })
+    }
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) =>{
+        if(err){
+            return res.status(401).send({message:'unauthorized access'})
+        }
+        req.user = decoded;
+        next()
+    })
+}
+
+
 async function run() {
     try {
-        
+
 
         // collections 
         const catColl = client.db('readifyDB').collection('categories')
@@ -47,13 +72,39 @@ async function run() {
 
 
         // jwt related 
-        app.post('/jwt', async(req, res) =>{
+        app.post('/jwt', logger, async (req, res) => {
             const user = req.body
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'})
-            console.log(user);
-            res.send(token)
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' })
+            // console.log(user);
+            res
+                .cookie("token", token, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production' ? true : false,
+                    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+                })
+                .send({ success: true });
+            // .send({ token });
         })
 
+        // app.post('/logout', async(req, res) => {
+        //     const user = req.body
+        //     console.log('logging out', user);
+        //     res
+        //     .clearCookie('token', {maxAge: 0 },)
+
+        //     .send({ success: true })
+        // })
+
+        app.post('/logout', async (req, res) => {
+            const user = req.body
+            res
+                .clearCookie('token', {
+                    maxAge: 0,
+                    secure: process.env.NODE_ENV === 'production' ? true : false,
+                    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+                })
+                .send({ status: true })
+        })
 
 
 
@@ -93,7 +144,7 @@ async function run() {
 
 
         // book post api 
-        app.post('/books', async (req, res) => {
+        app.post('/books', logger, verifyToken, async (req, res) => {
             const newBook = req.body
             // console.log(newBook)
             const result = await booksColl.insertOne(newBook)
@@ -121,7 +172,13 @@ async function run() {
 
 
         // Book get api 
-        app.get('/books', async (req, res) => {
+        app.get('/books', logger, verifyToken, async (req, res) => {
+            // console.log('cookies',req.cookies);
+            console.log(req.query.email);
+            // console.log('token owner info', req.user);
+            if(req.user.email !== req.query.email){
+                return res.status(403).send({message:'forbidden access'})
+            }
             const result = await booksColl.find().toArray()
             // console.log(result);
             res.send(result)
@@ -170,11 +227,11 @@ async function run() {
         app.delete('/delete/:id', async (req, res) => {
 
             const id = req.params.id
-            console.log(id);
-            
+            // console.log(id);
+
             const result = await borrowedColl.deleteOne({ refid: req.params.id })
             res.send(result)
-            
+
             const query = { _id: new ObjectId(id) }
             // const query = { _id: new ObjectId(refidNum) }
             // console.log(query)
