@@ -13,17 +13,16 @@ const port = process.env.PORT || 5000
 
 // middleware
 const corsOptions = {
-    origin: ['http://localhost:5173',],
+    origin: ['http://localhost:5173',
+    'https://project-readify.web.app',
+    'https://project-readify.firebaseapp.com',
+],
     credentials: true,
     optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser())
-
-
-
-
 
 
 // mongodb
@@ -59,7 +58,11 @@ const verifyToken = (req, res, next) => {
         next()
     })
 }
-
+const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production' ? true : false,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+}
 
 async function run() {
     try {
@@ -77,11 +80,7 @@ async function run() {
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' })
             // console.log(user);
             res
-                .cookie("token", token, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production' ? true : false,
-                    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-                })
+                .cookie("token", token, cookieOptions)
                 .send({ success: true });
             // .send({ token });
         })
@@ -98,11 +97,7 @@ async function run() {
         app.post('/logout', async (req, res) => {
             const user = req.body
             res
-                .clearCookie('token', {
-                    maxAge: 0,
-                    secure: process.env.NODE_ENV === 'production' ? true : false,
-                    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-                })
+                .clearCookie('token', {...cookieOptions, maxAge:0})
                 .send({ status: true })
         })
 
@@ -249,7 +244,7 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         // await client.connect();
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
+        // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
