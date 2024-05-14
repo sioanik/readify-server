@@ -72,6 +72,8 @@ async function run() {
         const catColl = client.db('readifyDB').collection('categories')
         const booksColl = client.db('readifyDB').collection('books')
         const borrowedColl = client.db('readifyDB').collection('borrowed')
+        const testiColl = client.db('readifyDB').collection('testimonials')
+        const authorsColl = client.db('readifyDB').collection('authors')
 
 
         // jwt related 
@@ -213,6 +215,16 @@ async function run() {
         app.get('/my-borrowed-books/:email', async (req, res) => {
             // console.log(req.params.email);
             const result = await borrowedColl.find({ borrowerEmail: req.params.email }).toArray()
+            res.send(result)
+        })
+
+        app.get('/testimonials', async(req, res) =>{
+            const result = await testiColl.find().toArray()
+            res.send(result)
+        })
+
+        app.get('/authors', async(req, res)=>{
+            const result = await authorsColl.find().toArray()
             res.send(result)
         })
 
