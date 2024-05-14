@@ -199,8 +199,8 @@ async function run() {
                     image: req.body.image,
                     rating: req.body.rating,
                     quantity: req.body.quantity,
-                    description: req.body.description,
-                    contents: req.body.contents,
+                    // description: req.body.description,
+                    // contents: req.body.contents,
                     category: req.body.category,
 
                 }
