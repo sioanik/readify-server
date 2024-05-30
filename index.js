@@ -74,6 +74,7 @@ async function run() {
         const borrowedColl = client.db('readifyDB').collection('borrowed')
         const testiColl = client.db('readifyDB').collection('testimonials')
         const authorsColl = client.db('readifyDB').collection('authors')
+        const reqBooksColl = client.db('readifyDB').collection('requests')
 
 
         // jwt related 
@@ -148,6 +149,14 @@ async function run() {
             res.send(result)
         })
 
+        // request book post api 
+        app.post('/request-books', logger, verifyToken, async (req, res) => {
+            const newBook = req.body
+            // console.log(newBook)
+            const result = await reqBooksColl.insertOne(newBook)
+            res.send(result)
+        })
+
 
         // Borrowed book post api 
         app.post('/borrowed-books', async (req, res) => {
@@ -180,6 +189,9 @@ async function run() {
             // console.log(result);
             res.send(result)
         })
+
+
+
 
         // categories api
         app.get('/categories', async (req, res) => {
@@ -218,6 +230,13 @@ async function run() {
             res.send(result)
         })
 
+        // my request list 
+        app.get('/my-requested-books/:email', async (req, res) => {
+            // console.log(req.params.email);
+            const result = await reqBooksColl.find({ email: req.params.email }).toArray()
+            res.send(result)
+        })
+
         app.get('/testimonials', async(req, res) =>{
             const result = await testiColl.find().toArray()
             res.send(result)
@@ -244,6 +263,18 @@ async function run() {
             // console.log(query)
             const result2 = await booksColl.updateOne(query, { $inc: { quantity: +1 } });
             // console.log(result2);
+
+        })
+
+        // delete requested book api 
+        app.delete('/delete-request/:id', async (req, res) => {
+
+            const id = req.params.id
+            // console.log(id);
+
+            const result = await reqBooksColl.deleteOne({_id: new ObjectId(id)})
+            res.send(result)
+
 
         })
 
